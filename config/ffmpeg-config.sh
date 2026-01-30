@@ -44,7 +44,6 @@ get_enabled_components() {
 get_disabled_components() {
     echo "\
         --disable-postproc \
-        --disable-network \
         --disable-vulkan"
 }
 

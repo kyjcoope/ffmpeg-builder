@@ -103,10 +103,53 @@ require_xcode() {
     log_info "Xcode path: $(xcode-select -p)"
 }
 
-# Verify Android NDK is available
+# Auto-detect Android NDK if not set
+find_android_ndk() {
+    # Already set, use it
+    if [[ -n "${ANDROID_NDK_HOME:-}" ]] && [[ -d "$ANDROID_NDK_HOME" ]]; then
+        echo "$ANDROID_NDK_HOME"
+        return
+    fi
+    
+    # Common NDK locations to search
+    local search_paths=(
+        # macOS Android Studio
+        "$HOME/Library/Android/sdk/ndk"
+        # Linux Android Studio
+        "$HOME/Android/Sdk/ndk"
+        # ANDROID_HOME/ANDROID_SDK_ROOT
+        "${ANDROID_HOME:-}/ndk"
+        "${ANDROID_SDK_ROOT:-}/ndk"
+    )
+    
+    for base_path in "${search_paths[@]}"; do
+        if [[ -d "$base_path" ]]; then
+            # Find the latest NDK version in this directory
+            local latest
+            latest=$(ls -1 "$base_path" 2>/dev/null | sort -V | tail -1)
+            if [[ -n "$latest" ]] && [[ -d "$base_path/$latest" ]]; then
+                echo "$base_path/$latest"
+                return
+            fi
+        fi
+    done
+    
+    # Not found
+    echo ""
+}
+
+# Verify Android NDK is available (auto-detects if not set)
 require_android_ndk() {
+    # Try to auto-detect if not set
     if [[ -z "${ANDROID_NDK_HOME:-}" ]]; then
-        die "ANDROID_NDK_HOME is not set. Please set it to your NDK path."
+        local detected
+        detected=$(find_android_ndk)
+        if [[ -n "$detected" ]]; then
+            export ANDROID_NDK_HOME="$detected"
+            log_info "Auto-detected NDK: $ANDROID_NDK_HOME"
+        else
+            die "ANDROID_NDK_HOME is not set and could not auto-detect NDK. Please set it manually."
+        fi
     fi
     
     if [[ ! -d "$ANDROID_NDK_HOME" ]]; then
