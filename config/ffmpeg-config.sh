@@ -2,8 +2,8 @@
 # FFmpeg shared configuration flags
 # Edit this file to customize the build
 
-# FFmpeg version (git tag) - 6.0 (libavutil 58.2)
-FFMPEG_VERSION="${FFMPEG_VERSION:-n6.0}"
+# FFmpeg version (git tag) - 6.1 has macOS AudioToolbox fixes
+FFMPEG_VERSION="${FFMPEG_VERSION:-n6.1}"
 
 # Libraries to build
 FFMPEG_LIBS=(
