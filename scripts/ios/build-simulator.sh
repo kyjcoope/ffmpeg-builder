@@ -45,6 +45,7 @@ build_arch() {
     local ldflags="-arch $arch -miphonesimulator-version-min=$IOS_MIN_VERSION -isysroot $sdk_path"
     
     log_info "Configuring FFmpeg for $arch..."
+    # audiotoolbox uses macOS-only CoreAudio APIs (AudioDeviceID, etc.) - disable for iOS
     ./configure \
         --prefix="$arch_build_dir" \
         --enable-cross-compile \
@@ -54,6 +55,8 @@ build_arch() {
         --sysroot="$sdk_path" \
         --extra-cflags="$cflags" \
         --extra-ldflags="$ldflags" \
+        --disable-indev=audiotoolbox \
+        --disable-outdev=audiotoolbox \
         $(get_ffmpeg_configure_flags)
     
     log_info "Building FFmpeg for $arch..."
