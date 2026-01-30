@@ -43,7 +43,6 @@ get_enabled_components() {
 # Get disabled components (for smaller binary size)
 get_disabled_components() {
     echo "\
-        --disable-postproc \
         --disable-vulkan"
 }
 

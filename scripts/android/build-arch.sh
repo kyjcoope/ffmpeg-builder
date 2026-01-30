@@ -114,9 +114,9 @@ main() {
     local extra_cflags="-fPIC -ffunction-sections -fdata-sections"
     local extra_ldflags="-Wl,--gc-sections -Wl,-z,max-page-size=16384"
     
-    # Add NEON for ARM architectures
-    if [[ "$ARCH" == "arm64-v8a" ]] || [[ "$ARCH" == "armeabi-v7a" ]]; then
-        extra_cflags="$extra_cflags -mfpu=neon"
+    # Add NEON flags for 32-bit ARM only (arm64 has NEON by default)
+    if [[ "$ARCH" == "armeabi-v7a" ]]; then
+        extra_cflags="$extra_cflags -mfpu=neon -mfloat-abi=softfp"
     fi
     
     log_info "Configuring FFmpeg..."
