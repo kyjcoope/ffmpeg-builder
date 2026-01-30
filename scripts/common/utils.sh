@@ -111,16 +111,24 @@ find_android_ndk() {
         return
     fi
     
-    # Common NDK locations to search
-    local search_paths=(
-        # macOS Android Studio
-        "$HOME/Library/Android/sdk/ndk"
-        # Linux Android Studio
-        "$HOME/Android/Sdk/ndk"
-        # ANDROID_HOME/ANDROID_SDK_ROOT
-        "${ANDROID_HOME:-}/ndk"
-        "${ANDROID_SDK_ROOT:-}/ndk"
-    )
+    # Common NDK locations to search (build array safely)
+    local search_paths=()
+    
+    # macOS Android Studio
+    search_paths+=("$HOME/Library/Android/sdk/ndk")
+    # Linux Android Studio  
+    search_paths+=("$HOME/Android/Sdk/ndk")
+    # Project-local NDK
+    search_paths+=("$(get_project_root)/ndk")
+    
+    # Add ANDROID_HOME if set
+    if [[ -n "${ANDROID_HOME:-}" ]]; then
+        search_paths+=("$ANDROID_HOME/ndk")
+    fi
+    # Add ANDROID_SDK_ROOT if set
+    if [[ -n "${ANDROID_SDK_ROOT:-}" ]]; then
+        search_paths+=("$ANDROID_SDK_ROOT/ndk")
+    fi
     
     for base_path in "${search_paths[@]}"; do
         if [[ -d "$base_path" ]]; then
