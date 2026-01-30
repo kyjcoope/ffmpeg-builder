@@ -38,12 +38,11 @@ create_framework_bundle() {
     rm -rf "$framework_dir"
     mkdir -p "$framework_dir/Headers"
     
-    # Copy dylib and rename to framework name (without lib prefix and extension)
-    local framework_name="${lib_name#lib}"  # Remove 'lib' prefix
-    cp "$dylib_path" "$framework_dir/$framework_name"
+    # Copy dylib and rename to match framework name (binary name = framework name without .framework)
+    cp "$dylib_path" "$framework_dir/$lib_name"
     
     # Fix install name to use @rpath
-    install_name_tool -id "@rpath/${lib_name}.framework/$framework_name" "$framework_dir/$framework_name"
+    install_name_tool -id "@rpath/${lib_name}.framework/$lib_name" "$framework_dir/$lib_name"
     
     # Copy headers
     if [[ -d "$source_dir/include/$lib_name" ]]; then
@@ -54,7 +53,7 @@ create_framework_bundle() {
     fi
     
     # Create Info.plist
-    local bundle_id="org.ffmpeg.${framework_name}"
+    local bundle_id="org.ffmpeg.${lib_name}"
     cat > "$framework_dir/Info.plist" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -63,13 +62,13 @@ create_framework_bundle() {
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>${framework_name}</string>
+    <string>${lib_name}</string>
     <key>CFBundleIdentifier</key>
     <string>${bundle_id}</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>${framework_name}</string>
+    <string>${lib_name}</string>
     <key>CFBundlePackageType</key>
     <string>FMWK</string>
     <key>CFBundleShortVersionString</key>
