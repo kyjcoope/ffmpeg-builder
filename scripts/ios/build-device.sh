@@ -44,6 +44,7 @@ main() {
     
     log_info "Configuring FFmpeg..."
     # audiotoolbox uses macOS-only CoreAudio APIs (AudioDeviceID, etc.) - disable for iOS
+    # scale_vt uses VTPixelTransferSession which requires iOS 16+ - disable for iOS 13+ compat
     ./configure \
         --prefix="$BUILD_DIR" \
         --enable-cross-compile \
@@ -55,6 +56,7 @@ main() {
         --extra-ldflags="$ldflags" \
         --disable-indev=audiotoolbox \
         --disable-outdev=audiotoolbox \
+        --disable-filter=scale_vt \
         $(get_ffmpeg_configure_flags)
     
     log_info "Building FFmpeg..."
