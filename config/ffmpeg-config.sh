@@ -2,8 +2,8 @@
 # FFmpeg shared configuration flags
 # Edit this file to customize the build
 
-# FFmpeg version (git tag) - default to 4.4 LTS
-FFMPEG_VERSION="${FFMPEG_VERSION:-n4.4}"
+# FFmpeg version (git tag) - 4.4.5 LTS (latest 4.4.x with SDK fixes)
+FFMPEG_VERSION="${FFMPEG_VERSION:-n4.4.5}"
 
 # Libraries to build
 FFMPEG_LIBS=(
