@@ -45,8 +45,6 @@ build_arch() {
     local ldflags="-arch $arch -miphonesimulator-version-min=$IOS_MIN_VERSION -isysroot $sdk_path"
     
     log_info "Configuring FFmpeg for $arch..."
-    # audiotoolbox uses macOS-only CoreAudio APIs (AudioDeviceID, etc.) - disable for iOS
-    # scale_vt uses VTPixelTransferSession which requires iOS 16+ - disable for iOS 13+ compat
     ./configure \
         --prefix="$arch_build_dir" \
         --enable-cross-compile \
@@ -56,10 +54,9 @@ build_arch() {
         --sysroot="$sdk_path" \
         --extra-cflags="$cflags" \
         --extra-ldflags="$ldflags" \
-        --disable-indev=audiotoolbox \
-        --disable-outdev=audiotoolbox \
-        --disable-filter=scale_vt \
-        $(get_ffmpeg_configure_flags)
+        $(get_ffmpeg_configure_flags) \
+        $(get_ios_flags) \
+        --disable-filter=scale_vt
     
     log_info "Building FFmpeg for $arch..."
     make -j"$(get_cpu_count)"

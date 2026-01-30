@@ -135,9 +135,8 @@ main() {
         --sysroot="$sysroot" \
         --extra-cflags="$extra_cflags" \
         --extra-ldflags="$extra_ldflags" \
-        --enable-neon \
-        --enable-asm \
-        $(get_ffmpeg_configure_flags)
+        $(get_ffmpeg_configure_flags) \
+        $(get_android_flags)
     
     log_info "Building FFmpeg..."
     make -j"$(get_cpu_count)"
