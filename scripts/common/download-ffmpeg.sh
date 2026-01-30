@@ -8,12 +8,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/utils.sh"
+source "$(get_project_root)/config/ffmpeg-config.sh"
 
 FFMPEG_REPO="https://git.ffmpeg.org/ffmpeg.git"
 FFMPEG_SOURCE_DIR="$(get_ffmpeg_source_dir)"
 
-# Get version from argument, env var, or fetch latest
-VERSION="${1:-${FFMPEG_VERSION:-}}"
+# Get version from argument, env var, or config default
+VERSION="${1:-$FFMPEG_VERSION}"
 
 main() {
     log_info "FFmpeg Source Downloader"

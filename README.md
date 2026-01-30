@@ -1,68 +1,59 @@
 # FFmpeg Builder
 
-Automated build scripts for compiling FFmpeg as native libraries for **Android** (`.so`) and **iOS** (`.xcframework`).
+Automated build scripts for compiling FFmpeg as native libraries for **Android**, **iOS**, and **Desktop** platforms.
 
 ## Features
 
-- 📱 **iOS XCFramework** — Universal binary supporting devices and simulators (arm64 + x86_64)
-- 🤖 **Android** — Shared libraries for arm64-v8a, armeabi-v7a, x86_64, x86 with 16KB page alignment
-- 🔄 **Automated** — Single command builds, GitHub Actions CI/CD ready
-- 📦 **Latest FFmpeg** — Builds the latest stable release
-
-## Prerequisites
-
-### For iOS Builds (macOS only)
-- macOS 12+ with Xcode 14+ installed
-- Xcode Command Line Tools: `xcode-select --install`
-
-### For Android Builds
-- Android NDK r25 or newer
-- Set `ANDROID_NDK_HOME` environment variable
-
-### Common
-- `git`, `make`, `yasm` or `nasm`
-- On macOS: `brew install yasm nasm pkg-config`
+- 📱 **iOS XCFramework** — Universal binary supporting devices + simulators (arm64 + x86_64)
+- 🤖 **Android** — Shared libraries with 16KB page alignment for Android 15+
+- 🖥️ **Desktop** — Linux, macOS (universal), Windows (cross-compile)
+- 🔄 **Automated** — Single command builds, skip existing, GitHub Actions ready
+- 📦 **FFmpeg 4.4 LTS** — Configurable version (default: 4.4 LTS)
 
 ## Quick Start
 
-### Clone the Repository
 ```bash
+# 1. Clone the repo
 git clone https://github.com/YOUR_USERNAME/ffmpeg-builder.git
 cd ffmpeg-builder
-```
 
-### Download FFmpeg Source
-```bash
+# 2. Make scripts executable
+chmod +x scripts/**/*.sh build-all.sh
+
+# 3. Download FFmpeg source (defaults to 4.4 LTS)
 ./scripts/common/download-ffmpeg.sh
+
+# 4. Build for mobile platforms (iOS + Android)
+./build-all.sh --setup-ndk
 ```
 
-### Build for iOS
+## Build Commands
+
+### Build All (Mobile)
 ```bash
-./scripts/ios/build-ios.sh
-# Output: output/ios/*.xcframework
+./build-all.sh                    # iOS + Android (default)
+./build-all.sh --desktop          # iOS + Android + Desktop
+./build-all.sh --skip-download    # Skip FFmpeg download
+./build-all.sh --setup-ndk        # Auto-download NDK if missing
 ```
 
-### Build for Android
+### Build Individual Platforms
 ```bash
-export ANDROID_NDK_HOME=/path/to/android-ndk
-./scripts/android/build-android.sh
-# Output: output/android/<arch>/lib/*.so
+./scripts/ios/build-ios.sh              # iOS XCFrameworks
+./scripts/android/build-android.sh      # Android all architectures
+./scripts/desktop/build-desktop.sh      # Desktop (current platform)
 ```
 
-## Configuration
-
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `FFMPEG_VERSION` | latest | Git tag to checkout (e.g., `n7.1`) |
-| `IOS_MIN_VERSION` | `13.0` | Minimum iOS deployment target |
-| `ANDROID_MIN_SDK` | `21` | Minimum Android API level |
-| `ANDROID_NDK_HOME` | — | Path to Android NDK (required) |
-
-### FFmpeg Configure Flags
-
-Edit `config/ffmpeg-config.sh` to customize enabled features and codecs.
+### Build Options
+| Flag | Description |
+|------|-------------|
+| `--force` | Rebuild even if output exists |
+| `--clean` | Clean build directories first |
+| `--ios-only` | Build only iOS |
+| `--android-only` | Build only Android |
+| `--desktop-only` | Build only desktop |
+| `--mobile-only` | Skip desktop builds |
+| `--setup-ndk` | Auto-download Android NDK |
 
 ## Output Structure
 
@@ -71,24 +62,57 @@ output/
 ├── ios/
 │   ├── libavcodec.xcframework/
 │   ├── libavformat.xcframework/
-│   ├── libavutil.xcframework/
-│   ├── libswresample.xcframework/
-│   ├── libswscale.xcframework/
-│   ├── libavdevice.xcframework/
-│   └── libavfilter.xcframework/
-│
-└── android/
-    ├── arm64-v8a/
-    │   ├── include/
-    │   └── lib/
-    ├── armeabi-v7a/
-    ├── x86_64/
-    └── x86/
+│   └── ...
+├── android/
+│   ├── arm64-v8a/lib/
+│   ├── armeabi-v7a/lib/
+│   └── x86_64/lib/
+└── desktop/
+    ├── linux/lib/
+    ├── macos/lib/
+    └── windows/lib/
 ```
+
+## Configuration
+
+### Environment Variables
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FFMPEG_VERSION` | `n4.4` | Git tag to build |
+| `IOS_MIN_VERSION` | `13.0` | Minimum iOS version |
+| `ANDROID_MIN_SDK` | `21` | Minimum Android API level |
+| `ANDROID_NDK_HOME` | auto | Path to NDK (auto-detected) |
+
+### Customize FFmpeg
+Edit `config/ffmpeg-config.sh` to change:
+- FFmpeg version
+- Enabled/disabled features
+- Libraries to build
+
+## Platform Requirements
+
+| Platform | Requirements |
+|----------|-------------|
+| **iOS** | macOS + Xcode 14+ |
+| **Android** | NDK r25+ (auto-downloaded with `--setup-ndk`) |
+| **Desktop Linux** | GCC/Clang, make |
+| **Desktop macOS** | Xcode Command Line Tools |
+| **Desktop Windows** | mingw-w64 (cross-compile from Linux/macOS) |
+
+## Android Architectures
+
+| Architecture | Description | Built |
+|-------------|-------------|-------|
+| arm64-v8a | 64-bit ARM (modern phones) | ✅ |
+| armeabi-v7a | 32-bit ARM (legacy) | ✅ |
+| x86_64 | Emulators, Chromebooks | ✅ |
+| x86 | Very legacy (skipped) | ❌ |
+
+All Android builds include **16KB page alignment** for Android 15+ compatibility.
 
 ## CI/CD
 
-GitHub Actions workflow is included. Push a tag to trigger a release build:
+GitHub Actions workflow included. Push a tag to trigger builds:
 
 ```bash
 git tag v1.0.0
@@ -97,4 +121,4 @@ git push origin v1.0.0
 
 ## License
 
-This project's build scripts are MIT licensed. FFmpeg itself is licensed under LGPL/GPL depending on configuration.
+Build scripts: MIT. FFmpeg: LGPL/GPL depending on configuration.
