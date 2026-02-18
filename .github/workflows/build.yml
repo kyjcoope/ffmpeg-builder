@@ -45,6 +45,35 @@ jobs:
           path: output/ios/*.xcframework
           retention-days: 30
 
+  # Build macOS frameworks (requires macOS)
+  build-macos:
+    name: Build macOS
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install yasm nasm pkg-config
+
+      - name: Download FFmpeg source
+        run: |
+          chmod +x scripts/common/*.sh
+          ./scripts/common/download-ffmpeg.sh ${{ github.event.inputs.ffmpeg_version }}
+
+      - name: Build FFmpeg for macOS
+        run: |
+          chmod +x scripts/macos/*.sh
+          ./scripts/macos/build-macos.sh
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-macos-frameworks
+          path: output/macos/*.framework
+          retention-days: 30
+
   # Build Android shared libraries
   build-android:
     name: Build Android
@@ -86,7 +115,7 @@ jobs:
   # Create release when tag is pushed
   release:
     name: Create Release
-    needs: [build-ios, build-android]
+    needs: [build-ios, build-macos, build-android]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
@@ -104,9 +133,16 @@ jobs:
           name: ffmpeg-android-libs
           path: android-libs
 
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ffmpeg-macos-frameworks
+          path: macos-frameworks
+
       - name: Create archives
         run: |
           cd ios-xcframeworks && zip -r ../ffmpeg-ios-xcframeworks.zip . && cd ..
+          cd macos-frameworks && zip -r ../ffmpeg-macos-frameworks.zip . && cd ..
           cd android-libs && zip -r ../ffmpeg-android-libs.zip . && cd ..
 
       - name: Create Release
@@ -114,5 +150,6 @@ jobs:
         with:
           files: |
             ffmpeg-ios-xcframeworks.zip
+            ffmpeg-macos-frameworks.zip
             ffmpeg-android-libs.zip
           generate_release_notes: true

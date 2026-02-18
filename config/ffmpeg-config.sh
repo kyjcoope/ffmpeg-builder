@@ -88,6 +88,15 @@ get_ios_flags() {
         --disable-vulkan"
 }
 
+# macOS-specific flags
+get_macos_flags() {
+    echo "\
+        --enable-videotoolbox \
+        --enable-audiotoolbox \
+        --enable-appkit \
+        --disable-vulkan"
+}
+
 # Full configure flags
 get_ffmpeg_configure_flags() {
     echo "$(get_common_flags) $(get_enabled_components) $(get_disabled_components)"

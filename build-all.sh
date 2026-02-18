@@ -6,8 +6,10 @@
 # Options:
 #   --ios-only      Build only iOS
 #   --android-only  Build only Android
+#   --macos-only    Build only macOS
 #   --desktop-only  Build only desktop (current platform)
 #   --mobile-only   Build only mobile (iOS + Android)
+#   --macos         Also build macOS frameworks
 #   --skip-download Skip FFmpeg download (use existing source)
 #   --setup-ndk     Download and setup NDK if not found
 
@@ -19,6 +21,7 @@ source "$SCRIPT_DIR/scripts/common/utils.sh"
 # Parse arguments
 BUILD_IOS=true
 BUILD_ANDROID=true
+BUILD_MACOS=false    # macOS off by default, use --macos to enable
 BUILD_DESKTOP=false  # Desktop off by default, use --desktop to enable
 SKIP_DOWNLOAD=false
 SETUP_NDK=false
@@ -33,15 +36,26 @@ for arg in "$@"; do
             BUILD_IOS=false
             BUILD_DESKTOP=false
             ;;
+        --macos-only)
+            BUILD_IOS=false
+            BUILD_ANDROID=false
+            BUILD_MACOS=true
+            BUILD_DESKTOP=false
+            ;;
+        --macos)
+            BUILD_MACOS=true
+            ;;
         --desktop-only)
             BUILD_IOS=false
             BUILD_ANDROID=false
+            BUILD_MACOS=false
             BUILD_DESKTOP=true
             ;;
         --desktop)
             BUILD_DESKTOP=true
             ;;
         --mobile-only)
+            BUILD_MACOS=false
             BUILD_DESKTOP=false
             ;;
         --skip-download)
@@ -56,7 +70,9 @@ for arg in "$@"; do
             echo "Options:"
             echo "  --ios-only      Build only iOS"
             echo "  --android-only  Build only Android"
+            echo "  --macos-only    Build only macOS"
             echo "  --desktop-only  Build only desktop (current platform)"
+            echo "  --macos         Also build macOS frameworks"
             echo "  --desktop       Also build desktop (off by default)"
             echo "  --mobile-only   Build only mobile (iOS + Android)"
             echo "  --skip-download Skip FFmpeg download (use existing source)"
@@ -72,6 +88,7 @@ main() {
     log_info "=========================================="
     log_info "iOS: $BUILD_IOS"
     log_info "Android: $BUILD_ANDROID"
+    log_info "macOS: $BUILD_MACOS"
     log_info "Desktop: $BUILD_DESKTOP"
     log_info "=========================================="
     
@@ -105,14 +122,25 @@ main() {
         fi
     fi
     
-    # Step 4: Build Android
+    # Step 4: Build macOS
+    if [[ "$BUILD_MACOS" == "true" ]]; then
+        if is_macos; then
+            log_info ""
+            log_info ">>> Building macOS..."
+            "$SCRIPT_DIR/scripts/macos/build-macos.sh"
+        else
+            log_warn "Skipping macOS build (requires macOS)"
+        fi
+    fi
+    
+    # Step 5: Build Android
     if [[ "$BUILD_ANDROID" == "true" ]]; then
         log_info ""
         log_info ">>> Building Android..."
         "$SCRIPT_DIR/scripts/android/build-android.sh"
     fi
     
-    # Step 5: Build Desktop
+    # Step 6: Build Desktop
     if [[ "$BUILD_DESKTOP" == "true" ]]; then
         log_info ""
         log_info ">>> Building Desktop..."
@@ -130,6 +158,9 @@ main() {
     fi
     if [[ "$BUILD_ANDROID" == "true" ]]; then
         log_info "Android Libraries: $(get_output_dir)/android/"
+    fi
+    if [[ "$BUILD_MACOS" == "true" ]] && is_macos; then
+        log_info "macOS Frameworks: $(get_output_dir)/macos/"
     fi
     if [[ "$BUILD_DESKTOP" == "true" ]]; then
         log_info "Desktop Libraries: $(get_output_dir)/desktop/"
