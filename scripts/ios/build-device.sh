@@ -52,8 +52,7 @@ main() {
         --sysroot="$sdk_path" \
         --extra-cflags="$cflags" \
         --extra-ldflags="$ldflags" \
-        $(get_ffmpeg_configure_flags) \
-        $(get_ios_flags) \
+        $(get_ffmpeg_configure_flags "ios") \
         --disable-filter=scale_vt
     
     log_info "Building FFmpeg..."

@@ -112,10 +112,51 @@ jobs:
           path: output/android/
           retention-days: 30
 
+  # Build Windows native with DXVA2/D3D11VA hardware acceleration
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-yasm
+            mingw-w64-x86_64-nasm
+            make
+            diffutils
+            pkg-config
+            git
+
+      - name: Download FFmpeg source
+        shell: msys2 {0}
+        run: |
+          chmod +x scripts/common/*.sh
+          ./scripts/common/download-ffmpeg.sh ${{ github.event.inputs.ffmpeg_version }}
+
+      - name: Build FFmpeg for Windows
+        shell: msys2 {0}
+        run: |
+          chmod +x scripts/windows/*.sh
+          ./scripts/windows/build-native.sh
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-windows-libs
+          path: output/windows/
+          retention-days: 30
+
   # Create release when tag is pushed
   release:
     name: Create Release
-    needs: [build-ios, build-macos, build-android]
+    needs: [build-ios, build-macos, build-android, build-windows]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
@@ -139,11 +180,18 @@ jobs:
           name: ffmpeg-macos-frameworks
           path: macos-frameworks
 
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ffmpeg-windows-libs
+          path: windows-libs
+
       - name: Create archives
         run: |
           cd ios-xcframeworks && zip -r ../ffmpeg-ios-xcframeworks.zip . && cd ..
           cd macos-frameworks && zip -r ../ffmpeg-macos-frameworks.zip . && cd ..
           cd android-libs && zip -r ../ffmpeg-android-libs.zip . && cd ..
+          cd windows-libs && zip -r ../ffmpeg-windows-libs.zip . && cd ..
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -152,4 +200,5 @@ jobs:
             ffmpeg-ios-xcframeworks.zip
             ffmpeg-macos-frameworks.zip
             ffmpeg-android-libs.zip
+            ffmpeg-windows-libs.zip
           generate_release_notes: true

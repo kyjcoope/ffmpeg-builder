@@ -135,8 +135,7 @@ main() {
         --sysroot="$sysroot" \
         --extra-cflags="$extra_cflags" \
         --extra-ldflags="$extra_ldflags" \
-        $(get_ffmpeg_configure_flags) \
-        $(get_android_flags)
+        $(get_ffmpeg_configure_flags "android")
     
     log_info "Building FFmpeg..."
     make -j"$(get_cpu_count)"

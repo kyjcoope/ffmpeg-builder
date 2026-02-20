@@ -97,7 +97,45 @@ get_macos_flags() {
         --disable-vulkan"
 }
 
-# Full configure flags
+# Linux-specific flags (VAAPI for Intel/AMD hardware decoding)
+get_linux_flags() {
+    echo "\
+        --enable-vaapi \
+        --disable-vdpau \
+        --disable-vulkan"
+}
+
+# Windows native flags (DXVA2/D3D11VA hardware decoding, built on Windows via MSYS2)
+get_windows_native_flags() {
+    echo "\
+        --enable-dxva2 \
+        --enable-d3d11va \
+        --disable-vulkan"
+}
+
+# Windows cross-compile flags (software-only, built from Linux/macOS via mingw-w64)
+get_windows_cross_flags() {
+    echo "\
+        --disable-vulkan"
+}
+
+# Full configure flags — pass optional platform name to include platform-specific flags
+# Usage: get_ffmpeg_configure_flags [platform]
+# Platforms: ios, macos, android, linux, windows-native, windows-cross
 get_ffmpeg_configure_flags() {
-    echo "$(get_common_flags) $(get_enabled_components) $(get_disabled_components)"
+    local platform="${1:-}"
+    local flags="$(get_common_flags) $(get_enabled_components) $(get_disabled_components)"
+
+    case "$platform" in
+        ios)             flags="$flags $(get_ios_flags)" ;;
+        macos)           flags="$flags $(get_macos_flags)" ;;
+        android)         flags="$flags $(get_android_flags)" ;;
+        linux)           flags="$flags $(get_linux_flags)" ;;
+        windows-native)  flags="$flags $(get_windows_native_flags)" ;;
+        windows-cross)   flags="$flags $(get_windows_cross_flags)" ;;
+        "")              ;; # No platform, base flags only
+        *)               echo "Warning: Unknown platform '$platform'" >&2 ;;
+    esac
+
+    echo "$flags"
 }

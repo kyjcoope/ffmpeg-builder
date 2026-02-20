@@ -55,8 +55,7 @@ main() {
         --sysroot="$sdk_path" \
         --extra-cflags="$cflags" \
         --extra-ldflags="$ldflags" \
-        $(get_ffmpeg_configure_flags) \
-        $(get_macos_flags)
+        $(get_ffmpeg_configure_flags "macos")
     
     log_info "Building FFmpeg..."
     make -j"$(get_cpu_count)"

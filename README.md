@@ -1,13 +1,14 @@
 # FFmpeg Builder
 
-Automated build scripts for compiling FFmpeg as native libraries for **Android**, **iOS**, **macOS**, and **Desktop** platforms.
+Automated build scripts for compiling FFmpeg as native libraries for **Android**, **iOS**, **macOS**, **Windows**, and **Linux** platforms.
 
 ## Features
 
 - 📱 **iOS XCFramework** — Universal binary supporting devices + simulators (arm64 + x86_64)
 - 🍎 **macOS Frameworks** — Universal binary frameworks (arm64 + x86_64) with VideoToolbox + AudioToolbox
 - 🤖 **Android** — Shared libraries with 16KB page alignment for Android 15+
-- 🖥️ **Desktop** — Linux, macOS (universal), Windows (cross-compile)
+- 🪟 **Windows** — Native build with DXVA2 + D3D11VA hardware acceleration (via MSYS2)
+- 🐧 **Linux** — Shared libraries with VAAPI hardware acceleration
 - 🔄 **Automated** — Single command builds, skip existing, GitHub Actions ready
 - 📦 **FFmpeg 6.1** — Configurable version (default: 6.1)
 
@@ -34,7 +35,8 @@ chmod +x scripts/**/*.sh build-all.sh
 ```bash
 ./build-all.sh                    # iOS + Android (default)
 ./build-all.sh --macos            # iOS + Android + macOS
-./build-all.sh --desktop          # iOS + Android + Desktop
+./build-all.sh --desktop          # iOS + Android + Desktop (Linux + Windows cross-compile)
+./build-all.sh --windows          # iOS + Android + Windows native (DXVA2/D3D11VA)
 ./build-all.sh --skip-download    # Skip FFmpeg download
 ./build-all.sh --setup-ndk        # Auto-download NDK if missing
 ```
@@ -44,7 +46,19 @@ chmod +x scripts/**/*.sh build-all.sh
 ./scripts/ios/build-ios.sh              # iOS XCFrameworks
 ./scripts/macos/build-macos.sh          # macOS Frameworks (arm64 + x86_64)
 ./scripts/android/build-android.sh      # Android all architectures
-./scripts/desktop/build-desktop.sh      # Desktop (current platform)
+./scripts/desktop/build-desktop.sh      # Desktop (Linux + Windows cross-compile)
+./scripts/windows/build-native.sh       # Windows native (run from MSYS2 shell)
+```
+
+### Windows Native Build (from PowerShell)
+```powershell
+# Option 1: PowerShell script (handles MSYS2 setup automatically)
+.\scripts\windows\build-windows-native.ps1
+
+# Option 2: With options
+.\scripts\windows\build-windows-native.ps1 -Force            # Rebuild even if exists
+.\scripts\windows\build-windows-native.ps1 -Clean            # Clean build directories first
+.\scripts\windows\build-windows-native.ps1 -SkipMsys2Setup   # Skip MSYS2 package installation
 ```
 
 ### Build Options
@@ -55,10 +69,12 @@ chmod +x scripts/**/*.sh build-all.sh
 | `--ios-only` | Build only iOS |
 | `--macos-only` | Build only macOS |
 | `--android-only` | Build only Android |
-| `--desktop-only` | Build only desktop |
+| `--desktop-only` | Build only desktop (Linux + Windows cross-compile) |
+| `--windows-only` | Build only Windows native (DXVA2/D3D11VA) |
 | `--macos` | Also build macOS frameworks |
 | `--desktop` | Also build desktop |
-| `--mobile-only` | Skip macOS/desktop builds |
+| `--windows` | Also build Windows native |
+| `--mobile-only` | Skip macOS/desktop/Windows builds |
 | `--setup-ndk` | Auto-download Android NDK |
 
 ## Output Structure
@@ -77,10 +93,13 @@ output/
 │   ├── arm64-v8a/lib/
 │   ├── armeabi-v7a/lib/
 │   └── x86_64/lib/
+├── windows/
+│   ├── bin/*.dll
+│   ├── lib/
+│   └── include/
 └── desktop/
     ├── linux/lib/
-    ├── macos/lib/
-    └── windows/lib/
+    └── windows/lib/  (cross-compiled, software-only)
 ```
 
 ## Hardware Acceleration
@@ -90,7 +109,9 @@ output/
 | **iOS** | VideoToolbox | H.264/HEVC hardware codec |
 | **macOS** | VideoToolbox + AudioToolbox | Video + audio hardware codecs |
 | **Android** | MediaCodec | H.264/HEVC via JNI |
-| **Desktop** | None | Software-only |
+| **Windows (native)** | DXVA2 + D3D11VA | DirectX hardware decode (H.264/HEVC) |
+| **Linux** | VAAPI | Intel/AMD hardware decode |
+| **Windows (cross-compile)** | None | Software-only |
 
 ## Configuration
 
@@ -107,7 +128,19 @@ output/
 Edit `config/ffmpeg-config.sh` to change:
 - FFmpeg version
 - Enabled/disabled features
+- Platform-specific hardware acceleration flags
 - Libraries to build
+
+All platform build scripts use the shared config via `get_ffmpeg_configure_flags "platform"`:
+```bash
+# Platform names: ios, macos, android, linux, windows-native, windows-cross
+get_ffmpeg_configure_flags "ios"            # Base flags + iOS (VideoToolbox)
+get_ffmpeg_configure_flags "macos"          # Base flags + macOS (VideoToolbox + AudioToolbox)
+get_ffmpeg_configure_flags "android"        # Base flags + Android (MediaCodec)
+get_ffmpeg_configure_flags "linux"          # Base flags + Linux (VAAPI)
+get_ffmpeg_configure_flags "windows-native" # Base flags + Windows (DXVA2 + D3D11VA)
+get_ffmpeg_configure_flags "windows-cross"  # Base flags + Windows (software-only)
+```
 
 ## Platform Requirements
 
@@ -116,9 +149,40 @@ Edit `config/ffmpeg-config.sh` to change:
 | **iOS** | macOS + Xcode 14+ |
 | **macOS** | macOS + Xcode 14+ (or Command Line Tools) |
 | **Android** | NDK r25+ (auto-downloaded with `--setup-ndk`) |
-| **Desktop Linux** | GCC/Clang, make |
-| **Desktop macOS** | Xcode Command Line Tools |
-| **Desktop Windows** | mingw-w64 (cross-compile from Linux/macOS) |
+| **Windows (native)** | Windows 10+ with MSYS2 (auto-installed by PowerShell script) |
+| **Linux** | GCC/Clang, make, libva-dev (for VAAPI) |
+| **Windows (cross-compile)** | Linux or macOS with mingw-w64 |
+
+### Windows Native Prerequisites
+
+The PowerShell script `build-windows-native.ps1` handles MSYS2 setup automatically, but you can also set it up manually:
+
+1. Install [MSYS2](https://www.msys2.org/)
+2. Open **MSYS2 MINGW64** shell
+3. Install packages:
+   ```bash
+   pacman -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-yasm mingw-w64-x86_64-nasm make diffutils pkg-config git
+   ```
+4. Run the build:
+   ```bash
+   cd /path/to/ffmpeg-builder
+   ./scripts/windows/build-native.sh
+   ```
+
+### Linux Prerequisites
+
+For hardware-accelerated builds with VAAPI, install the VAAPI development headers:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install libva-dev
+
+# Fedora/RHEL
+sudo dnf install libva-devel
+
+# Arch Linux
+sudo pacman -S libva
+```
 
 ## Android Architectures
 
@@ -140,10 +204,11 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-Builds iOS, macOS, and Android in parallel. Release artifacts include:
+Builds iOS, macOS, Android, and Windows in parallel. Release artifacts include:
 - `ffmpeg-ios-xcframeworks.zip`
 - `ffmpeg-macos-frameworks.zip`
 - `ffmpeg-android-libs.zip`
+- `ffmpeg-windows-libs.zip`
 
 ## License
 

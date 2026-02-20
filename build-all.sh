@@ -7,9 +7,12 @@
 #   --ios-only      Build only iOS
 #   --android-only  Build only Android
 #   --macos-only    Build only macOS
-#   --desktop-only  Build only desktop (current platform)
+#   --desktop-only  Build only desktop (Linux + Windows cross-compile)
+#   --windows-only  Build only Windows (native with DXVA2/D3D11VA)
 #   --mobile-only   Build only mobile (iOS + Android)
 #   --macos         Also build macOS frameworks
+#   --desktop       Also build desktop (Linux + Windows cross-compile)
+#   --windows       Also build Windows native (requires MSYS2 on Windows)
 #   --skip-download Skip FFmpeg download (use existing source)
 #   --setup-ndk     Download and setup NDK if not found
 
@@ -23,6 +26,7 @@ BUILD_IOS=true
 BUILD_ANDROID=true
 BUILD_MACOS=false    # macOS off by default, use --macos to enable
 BUILD_DESKTOP=false  # Desktop off by default, use --desktop to enable
+BUILD_WINDOWS=false  # Windows native off by default, use --windows to enable
 SKIP_DOWNLOAD=false
 SETUP_NDK=false
 
@@ -41,6 +45,7 @@ for arg in "$@"; do
             BUILD_ANDROID=false
             BUILD_MACOS=true
             BUILD_DESKTOP=false
+            BUILD_WINDOWS=false
             ;;
         --macos)
             BUILD_MACOS=true
@@ -50,13 +55,25 @@ for arg in "$@"; do
             BUILD_ANDROID=false
             BUILD_MACOS=false
             BUILD_DESKTOP=true
+            BUILD_WINDOWS=false
             ;;
         --desktop)
             BUILD_DESKTOP=true
             ;;
+        --windows-only)
+            BUILD_IOS=false
+            BUILD_ANDROID=false
+            BUILD_MACOS=false
+            BUILD_DESKTOP=false
+            BUILD_WINDOWS=true
+            ;;
+        --windows)
+            BUILD_WINDOWS=true
+            ;;
         --mobile-only)
             BUILD_MACOS=false
             BUILD_DESKTOP=false
+            BUILD_WINDOWS=false
             ;;
         --skip-download)
             SKIP_DOWNLOAD=true
@@ -71,9 +88,11 @@ for arg in "$@"; do
             echo "  --ios-only      Build only iOS"
             echo "  --android-only  Build only Android"
             echo "  --macos-only    Build only macOS"
-            echo "  --desktop-only  Build only desktop (current platform)"
+            echo "  --desktop-only  Build only desktop (Linux + Windows cross-compile)"
+            echo "  --windows-only  Build only Windows native (DXVA2/D3D11VA)"
             echo "  --macos         Also build macOS frameworks"
             echo "  --desktop       Also build desktop (off by default)"
+            echo "  --windows       Also build Windows native (off by default)"
             echo "  --mobile-only   Build only mobile (iOS + Android)"
             echo "  --skip-download Skip FFmpeg download (use existing source)"
             echo "  --setup-ndk     Download and setup NDK if not found"
@@ -90,6 +109,7 @@ main() {
     log_info "Android: $BUILD_ANDROID"
     log_info "macOS: $BUILD_MACOS"
     log_info "Desktop: $BUILD_DESKTOP"
+    log_info "Windows Native: $BUILD_WINDOWS"
     log_info "=========================================="
     
     # Step 1: Download FFmpeg source
@@ -140,11 +160,18 @@ main() {
         "$SCRIPT_DIR/scripts/android/build-android.sh"
     fi
     
-    # Step 6: Build Desktop
+    # Step 6: Build Desktop (Linux + Windows cross-compile)
     if [[ "$BUILD_DESKTOP" == "true" ]]; then
         log_info ""
         log_info ">>> Building Desktop..."
         "$SCRIPT_DIR/scripts/desktop/build-desktop.sh"
+    fi
+    
+    # Step 7: Build Windows Native (DXVA2/D3D11VA)
+    if [[ "$BUILD_WINDOWS" == "true" ]]; then
+        log_info ""
+        log_info ">>> Building Windows Native..."
+        "$SCRIPT_DIR/scripts/windows/build-native.sh"
     fi
     
     # Summary
@@ -164,6 +191,9 @@ main() {
     fi
     if [[ "$BUILD_DESKTOP" == "true" ]]; then
         log_info "Desktop Libraries: $(get_output_dir)/desktop/"
+    fi
+    if [[ "$BUILD_WINDOWS" == "true" ]]; then
+        log_info "Windows Libraries: $(get_output_dir)/windows/"
     fi
 }
 
