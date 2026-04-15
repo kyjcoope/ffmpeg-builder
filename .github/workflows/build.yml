@@ -15,6 +15,10 @@ env:
   ANDROID_MIN_SDK: 21
   IOS_MIN_VERSION: '13.0'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Build iOS XCFrameworks (requires macOS)
   build-ios:
@@ -27,6 +31,12 @@ jobs:
       - name: Install dependencies
         run: |
           brew install yasm nasm pkg-config
+
+      - name: Cache FFmpeg source
+        uses: actions/cache@v4
+        with:
+          path: ffmpeg-source/
+          key: ffmpeg-src-${{ github.event.inputs.ffmpeg_version || 'latest' }}
 
       - name: Download FFmpeg source
         run: |
@@ -56,6 +66,12 @@ jobs:
       - name: Install dependencies
         run: |
           brew install yasm nasm pkg-config
+
+      - name: Cache FFmpeg source
+        uses: actions/cache@v4
+        with:
+          path: ffmpeg-source/
+          key: ffmpeg-src-${{ github.event.inputs.ffmpeg_version || 'latest' }}
 
       - name: Download FFmpeg source
         run: |
@@ -95,6 +111,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y yasm nasm pkg-config
 
+      - name: Cache FFmpeg source
+        uses: actions/cache@v4
+        with:
+          path: ffmpeg-source/
+          key: ffmpeg-src-${{ github.event.inputs.ffmpeg_version || 'latest' }}
+
       - name: Download FFmpeg source
         run: |
           chmod +x scripts/common/*.sh
@@ -133,6 +155,12 @@ jobs:
             diffutils
             pkg-config
             git
+
+      - name: Cache FFmpeg source
+        uses: actions/cache@v4
+        with:
+          path: ffmpeg-source/
+          key: ffmpeg-src-${{ github.event.inputs.ffmpeg_version || 'latest' }}
 
       - name: Download FFmpeg source
         shell: msys2 {0}
