@@ -103,8 +103,10 @@ jobs:
 
       - name: Install NDK
         run: |
-          sdkmanager --install "ndk;26.1.10909125"
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
+          # r28c (28.2.13676358): aligns 64-bit shared libs to 16KB by default,
+          # required for Google Play's Android 15+ (API 35+) compatibility rules.
+          sdkmanager --install "ndk;28.2.13676358"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |

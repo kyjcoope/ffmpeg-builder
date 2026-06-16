@@ -148,7 +148,7 @@ get_ffmpeg_configure_flags "windows-cross"  # Base flags + Windows (software-onl
 |----------|-------------|
 | **iOS** | macOS + Xcode 14+ |
 | **macOS** | macOS + Xcode 14+ (or Command Line Tools) |
-| **Android** | NDK r25+ (auto-downloaded with `--setup-ndk`) |
+| **Android** | NDK r28+ recommended (16KB-aligned by default; auto-downloaded with `--setup-ndk`). r27 and lower also work — the build passes the 16KB linker flags explicitly. |
 | **Windows (native)** | Windows 10+ with MSYS2 (auto-installed by PowerShell script) |
 | **Linux** | GCC/Clang, make, libva-dev (for VAAPI) |
 | **Windows (cross-compile)** | Linux or macOS with mingw-w64 |
@@ -193,7 +193,20 @@ sudo pacman -S libva
 | x86_64 | Emulators, Chromebooks | ✅ |
 | x86 | Very legacy (skipped) | ❌ |
 
-All Android builds include **16KB page alignment** for Android 15+ compatibility.
+All 64-bit Android builds use **16KB ELF page alignment** for Android 15+ (API 35+)
+compatibility, required by Google Play. The build links with
+`-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384` and every build is
+gated by `scripts/android/verify-16kb.sh`, which fails if any 64-bit `.so` has a
+LOAD segment aligned below `2**14`. Run it standalone any time:
+
+```bash
+./scripts/android/verify-16kb.sh            # checks output/android/{arm64-v8a,x86_64}
+```
+
+> Note: the consuming Android/Flutter app is still responsible for APK/AAB zip
+> alignment (AGP 8.5.1+ / `zipalign -P 16`) and for shipping a 16KB-aligned
+> `libc++_shared.so`. This builder only produces the FFmpeg `.so` files (pure C,
+> no C++ runtime dependency).
 
 ## CI/CD
 

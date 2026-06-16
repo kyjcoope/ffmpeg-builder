@@ -95,6 +95,11 @@ main() {
         fi
     done
     
+    # Gate: every 64-bit .so must be 16KB-aligned for Android 15+ (Google Play).
+    log_info ""
+    log_info "=== Verifying 16KB page alignment ==="
+    "$SCRIPT_DIR/verify-16kb.sh" "$OUTPUT_DIR"
+
     log_success ""
     log_success "=========================================="
     log_success "Android build complete!"

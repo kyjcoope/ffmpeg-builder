@@ -110,9 +110,17 @@ main() {
     # Extra C flags
     # -fPIC: Position independent code (required for shared libs)
     # -ffunction-sections -fdata-sections: Enable dead code elimination
-    # -Wl,-z,max-page-size=16384: 16KB page alignment for Android 15+ support
     local extra_cflags="-fPIC -ffunction-sections -fdata-sections"
-    local extra_ldflags="-Wl,--gc-sections -Wl,-z,max-page-size=16384"
+
+    # 16KB ELF page alignment for Android 15+ on 64-bit devices.
+    # Google Play requires LOAD segments aligned to >= 2**14 (16384) for apps
+    # targeting API 35+. This is the default on NDK r28+, but required explicitly
+    # on r27 and lower. We set both flags Google recommends and apply them via
+    # LDFLAGS *and* LDSOFLAGS: FFmpeg links each .so with both
+    # ($(LD) $(SHFLAGS) $(LDFLAGS) $(LDSOFLAGS) ...), so this is belt-and-suspenders.
+    # See: https://developer.android.com/guide/practices/page-sizes
+    local page_align_flags="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384"
+    local extra_ldflags="-Wl,--gc-sections $page_align_flags"
     
     # Add NEON flags for 32-bit ARM only (arm64 has NEON by default)
     if [[ "$ARCH" == "armeabi-v7a" ]]; then
@@ -135,6 +143,7 @@ main() {
         --sysroot="$sysroot" \
         --extra-cflags="$extra_cflags" \
         --extra-ldflags="$extra_ldflags" \
+        --extra-ldsoflags="$page_align_flags" \
         $(get_ffmpeg_configure_flags "android")
     
     log_info "Building FFmpeg..."
